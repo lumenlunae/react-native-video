@@ -465,6 +465,10 @@ static NSString *const timedMetadata = @"timedMetadata";
                                            selector:@selector(playbackStalled:)
                                                name:AVPlayerItemPlaybackStalledNotification
                                              object:nil];
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                            selector:@selector(audioSessionChanged:)
+                                                name:AVAudioSessionRouteChangeNotification
+                                              object:nil];
 }
 
 - (void)playbackStalled:(NSNotification *)notification
@@ -473,6 +477,11 @@ static NSString *const timedMetadata = @"timedMetadata";
     self.onPlaybackStalled(@{@"target": self.reactTag});
   }
   _playbackStalled = YES;
+}
+
+- (void)audioSessionChanged:(NSNotification *)notification
+{
+    [_player play];
 }
 
 - (void)playerItemDidReachEnd:(NSNotification *)notification

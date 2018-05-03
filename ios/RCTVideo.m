@@ -590,6 +590,7 @@ static NSString *const timedMetadata = @"timedMetadata";
                               ofTrack:videoTrack
                                atTime:timeOffset
                                 error:&editError];
+      [compVideoTrack setPreferredTransform:videoTrack.preferredTransform];
     }
     
     if ([audioTracks count] > 0) {

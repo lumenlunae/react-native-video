@@ -19,7 +19,7 @@ RCT_EXPORT_MODULE();
     return dispatch_get_main_queue();
 }
 
-RCT_EXPORT_VIEW_PROPERTY(src, NSDictionary);
+RCT_EXPORT_VIEW_PROPERTY(src, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(resizeMode, NSString);
 RCT_EXPORT_VIEW_PROPERTY(repeat, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(paused, BOOL);
@@ -31,7 +31,9 @@ RCT_EXPORT_VIEW_PROPERTY(playWhenInactive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(ignoreSilentSwitch, NSString);
 RCT_EXPORT_VIEW_PROPERTY(rate, float);
 RCT_EXPORT_VIEW_PROPERTY(seek, float);
+RCT_EXPORT_VIEW_PROPERTY(seekClip, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(currentTime, float);
+RCT_EXPORT_VIEW_PROPERTY(buffering, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(fullscreen, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(progressUpdateInterval, float);
 /* Should support: onLoadStart, onLoad, and onError to stay consistent with Image */

@@ -12,9 +12,19 @@ const styles = StyleSheet.create({
 
 export default class Video extends Component {
 
-  constructor(props) {
-    super(props);
-
+  constructor(props, context) {
+    super(props, context);
+    this.seek = this.seek.bind(this);
+    this.seekToClip = this.seekToClip.bind(this);
+    this._assignRoot = this._assignRoot.bind(this);
+    this._onLoadStart = this._onLoadStart.bind(this);
+    this._onLoad = this._onLoad.bind(this);
+    this._onError = this._onError.bind(this);
+    this._onProgress = this._onProgress.bind(this);
+    this._onSeek = this._onSeek.bind(this);
+    this._onSeekToClip = this._onSeekToClip.bind(this);
+    this._onClipEnd = this._onClipEnd.bind(this);
+    this._onEnd = this._onEnd.bind(this);
     this.state = {
       showPoster: true,
     };
@@ -36,6 +46,11 @@ export default class Video extends Component {
     this.setNativeProps({ fullscreen: false });
   };
 
+  // time is optional
+  seekToClip(index, time) {
+    this.setNativeProps({ seekClip: { index, time } });
+  }
+  
   _assignRoot = (component) => {
     this._root = component;
   };
@@ -73,6 +88,18 @@ export default class Video extends Component {
       this.props.onSeek(event.nativeEvent);
     }
   };
+
+  _onSeekToClip(event) {
+    if (this.props.onSeekToClip) {
+      this.props.onSeekToClip(event.nativeEvent);
+    }
+  }
+
+  _onClipEnd(event) {
+    if (this.props.onClipEnd) {
+      this.props.onClipEnd(event.nativeEvent);
+    }
+  }
 
   _onEnd = (event) => {
     if (this.props.onEnd) {
@@ -157,16 +184,33 @@ export default class Video extends Component {
   };
 
   render() {
-    const resizeMode = this.props.resizeMode;
-    const source = resolveAssetSource(this.props.source) || {};
+    const {
+      source,
+      resizeMode,
+      buffering
+    } = this.props;
 
-    let uri = source.uri || '';
-    if (uri && uri.match(/^\//)) {
-      uri = `file://${uri}`;
+    if (source.constructor !== Object && source.constructor !== Array) {
+      throw "react-native-video: Invalid type for props.source, expected Object or Array, got: " + source.constructor;
     }
 
-    const isNetwork = !!(uri && uri.match(/^https?:/));
-    const isAsset = !!(uri && uri.match(/^(assets-library|file|content|ms-appx|ms-appdata):/));
+    sources = (source.constructor === Object ? [source] : source).map(function(src) {
+      const resolved_source = resolveAssetSource(src) || {};
+      let uri = resolved_source.uri || '';
+      if (uri && uri.match(/^\//)) {
+        uri = `file://${uri}`;
+      }
+      const isNetwork = !!(uri && uri.match(/^https?:/));
+      const isAsset = !!(uri && uri.match(/^(assets-library|file|content|ms-appx|ms-appdata):/));
+      return {
+        uri,
+        isNetwork,
+        isAsset,
+        type: resolved_source.type || '',
+        mainVer: source.mainVer || 0,
+        patchVer: source.patchVer || 0,
+      };
+    }).filter((src) => src.uri);
 
     let nativeResizeMode;
     if (resizeMode === VideoResizeMode.stretch) {
@@ -183,19 +227,15 @@ export default class Video extends Component {
     Object.assign(nativeProps, {
       style: [styles.base, nativeProps.style],
       resizeMode: nativeResizeMode,
-      src: {
-        uri,
-        isNetwork,
-        isAsset,
-        type: source.type || '',
-        mainVer: source.mainVer || 0,
-        patchVer: source.patchVer || 0,
-      },
+      src: sources,
+      buffering: buffering === false ? false : true,
       onVideoLoadStart: this._onLoadStart,
       onVideoLoad: this._onLoad,
       onVideoError: this._onError,
       onVideoProgress: this._onProgress,
       onVideoSeek: this._onSeek,
+      onVideoSeekToClip: this._onSeekToClip,
+      onVideoClipEnd: this._onClipEnd,
       onVideoEnd: this._onEnd,
       onVideoBuffer: this._onBuffer,
       onTimedMetadata: this._onTimedMetadata,
@@ -246,7 +286,7 @@ export default class Video extends Component {
 
 Video.propTypes = {
   /* Native only */
-  src: PropTypes.object,
+  src: PropTypes.array,
   seek: PropTypes.number,
   fullscreen: PropTypes.bool,
   onVideoLoadStart: PropTypes.func,
@@ -261,15 +301,9 @@ Video.propTypes = {
   onVideoFullscreenPlayerDidPresent: PropTypes.func,
   onVideoFullscreenPlayerWillDismiss: PropTypes.func,
   onVideoFullscreenPlayerDidDismiss: PropTypes.func,
-
+  seekClip: PropTypes.object,
   /* Wrapper component */
-  source: PropTypes.oneOfType([
-    PropTypes.shape({
-      uri: PropTypes.string
-    }),
-    // Opaque type returned by require('./video.mp4')
-    PropTypes.number
-  ]),
+  // source: object or array
   resizeMode: PropTypes.string,
   poster: PropTypes.string,
   repeat: PropTypes.bool,
@@ -284,12 +318,15 @@ Video.propTypes = {
   controls: PropTypes.bool,
   currentTime: PropTypes.number,
   progressUpdateInterval: PropTypes.number,
+  buffering: PropTypes.bool,
   onLoadStart: PropTypes.func,
   onLoad: PropTypes.func,
   onBuffer: PropTypes.func,
   onError: PropTypes.func,
   onProgress: PropTypes.func,
   onSeek: PropTypes.func,
+  onSeekToClip: PropTypes.func,
+  onClipEnd: PropTypes.func,
   onEnd: PropTypes.func,
   onFullscreenPlayerWillPresent: PropTypes.func,
   onFullscreenPlayerDidPresent: PropTypes.func,
@@ -316,5 +353,6 @@ const RCTVideo = requireNativeComponent('RCTVideo', Video, {
     src: true,
     seek: true,
     fullscreen: true,
+    buffering: true
   },
 });
